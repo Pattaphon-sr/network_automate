@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cisco Router Console</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #08111f; color: #e5edf7; }
+    main { width: min(760px, calc(100% - 32px)); background: #101d2f; padding: 28px; border: 1px solid #263b55; border-radius: 16px; box-shadow: 0 18px 50px #0007; }
+    h1 { margin: 0 0 8px; font-size: 1.65rem; }
+    p { margin: 0 0 24px; color: #9fb0c5; }
+    label { display: block; margin: 14px 0 6px; font-weight: 650; }
+    input { box-sizing: border-box; width: 100%; padding: 12px; border: 1px solid #38516d; border-radius: 8px; background: #07111e; color: white; font: inherit; }
+    button { margin-top: 18px; padding: 12px 22px; border: 0; border-radius: 8px; background: #34d399; color: #032016; font-weight: 750; cursor: pointer; }
+    button:disabled { opacity: .55; cursor: wait; }
+    pre { min-height: 180px; overflow: auto; margin: 22px 0 0; padding: 16px; border-radius: 8px; background: #030811; color: #b8f7d4; white-space: pre-wrap; }
+    .error { color: #fca5a5; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Cisco Router Console</h1>
+  <p>ส่งคำสั่งผ่าน SSH ไปยัง Cisco 7200</p>
+  <form id="commandForm">
+    <label for="ip">Router IP</label>
+    <input id="ip" value="{{ default_ip }}" inputmode="decimal" required>
+    <label for="command">Router command line</label>
+    <input id="command" placeholder="เช่น show ip interface brief" maxlength="500" required autofocus>
+    <button id="run" type="submit">Execute</button>
+  </form>
+  <pre id="output">พร้อมรับคำสั่ง</pre>
+</main>
+<script>
+const form = document.querySelector('#commandForm');
+const button = document.querySelector('#run');
+const output = document.querySelector('#output');
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  button.disabled = true;
+  output.className = '';
+  output.textContent = 'กำลังเชื่อมต่อและรันคำสั่ง...';
+  try {
+    const response = await fetch('/api/execute', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ip: document.querySelector('#ip').value, command: document.querySelector('#command').value})
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+    output.textContent = data.output;
+  } catch (error) {
+    output.className = 'error';
+    output.textContent = error.message;
+  } finally { button.disabled = false; }
+});
+</script>
+</body>
+</html>
